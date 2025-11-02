@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>控制面板</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style type="text/tailwindcss">
+        @layer base {
+            html, body {
+                margin: 0;
+                padding: 0;
+                background-color: #1F2937;
+            }
+            body {
+                font-family: 'Chakra Petch', sans-serif;
+            }.panel-bg {
+                background-color: var(--charcoal-dark);
+                background-image: linear-gradient(0deg, transparent 24%, var(--charcoal-medium) 25%, var(--charcoal-medium) 26%, transparent 27%, transparent 74%, var(--charcoal-medium) 75%, var(--charcoal-medium) 76%, transparent 77%, transparent),
+                                  linear-gradient(90deg, transparent 24%, var(--charcoal-medium) 25%, var(--charcoal-medium) 26%, transparent 27%, transparent 74%, var(--charcoal-medium) 75%, var(--charcoal-medium) 76%, transparent 77%, transparent);
+                background-size: 32px 32px;
+            }
+            .drag-region {
+                -webkit-app-region: drag;
+            }
+            .no-drag {
+                -webkit-app-region: no-drag;
+            }
+            /* 固定布局样式，防止响应式变形 */
+            .fixed-layout {
+                min-width: 600px;
+                overflow-x: auto;
+            }
+            .fixed-grid {
+                display: flex;
+                flex-direction: column;
+                gap: 1.2rem;
+                min-width: 0;
+                height: 100%;
+                overflow-y: auto;
+            }
+            .main-content-row {
+                display: grid;
+                grid-template-columns: 2fr 1fr;
+                gap: 1rem;
+                min-height: 300px;
+                max-height: 400px;
+                flex-shrink: 0;
+            }
+            .fixed-config-grid {
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 1rem;
+                align-items: start;
+            }
+            .fixed-checkbox-grid {
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 0.75rem;
+                margin-top: 0.75rem;
+            }
+            /* 确保配置区域在小窗口下也能正常显示 */
+            @media (max-width: 900px) {
+                .fixed-config-grid {
+                    grid-template-columns: repeat(3, 1fr);
+                    gap: 0.75rem;
+                }
+                .fixed-checkbox-grid {
+                    grid-template-columns: repeat(4, 1fr);
+                    gap: 0.5rem;
+                }
+            }
+            @media (max-width: 700px) {
+                .fixed-config-grid {
+                    grid-template-columns: repeat(2, 1fr);
+                    gap: 0.5rem;
+                }
+                .fixed-checkbox-grid {
+                    grid-template-columns: repeat(2, 1fr);
+                    gap: 0.5rem;
+                }
+            }
+            @media (max-width: 500px) {
+                .fixed-config-grid {
+                    grid-template-columns: 1fr;
+                    gap: 0.5rem;
+                }
+                .fixed-checkbox-grid {
+                    grid-template-columns: 1fr;
+                    gap: 0.5rem;
+                }
+            }
+        }
+    </style>
+<script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              'sans': ["'Chakra Petch'", "sans-serif"],'mono': ["'IBM Plex Mono'", "monospace"],},
+            colors: {
+              'charcoal-dark': '#1F2937','charcoal-medium': '#374151','charcoal-light': '#4B5563','olive': '#6D8C6F','amber-active': '#D97706','red-alert': '#DC2626','text-primary': '#E0E7FF','text-secondary': '#AAB2C0','panel-bg': '#1F2937',
+            }
+          },
+        },
+      }
+    </script>
+</head>
+<body class="bg-charcoal-dark font-sans text-text-primary antialiased">
+<div class="w-full h-screen bg-charcoal-dark shadow-xl border border-charcoal-medium overflow-hidden flex flex-col fixed-layout">
+<div class="flex justify-between items-center bg-charcoal-medium text-text-secondary p-3 border-b border-charcoal-light drag-region">
+<div class="flex items-center space-x-3">
+<span class="material-symbols-outlined text-xl text-amber-active">terminal</span>
+<span class="font-bold text-text-primary uppercase text-lg tracking-wider">控制面板</span>
+</div>
+<div class="flex items-center space-x-2 no-drag">
+<button class="w-8 h-6 bg-amber-active border border-amber-active/50 cursor-pointer transition-all duration-300 flex items-center justify-center text-charcoal-dark hover:scale-110 hover:shadow-lg hover:shadow-amber-active/30 text-xs font-bold" id="minimize-btn" title="最小化">
+<span class="material-symbols-outlined text-sm">minimize</span>
+</button>
+<button class="w-8 h-6 bg-olive border border-olive/50 cursor-pointer transition-all duration-300 flex items-center justify-center text-charcoal-dark hover:scale-110 hover:shadow-lg hover:shadow-olive/30 text-xs font-bold" id="maximize-btn" title="最大化/还原">
+<span class="material-symbols-outlined text-sm">crop_square</span>
+</button>
+<button class="w-8 h-6 bg-red-alert border border-red-alert/50 cursor-pointer transition-all duration-300 flex items-center justify-center text-white hover:scale-110 hover:shadow-lg hover:shadow-red-alert/30 text-xs font-bold" id="close-btn" title="关闭">
+<span class="material-symbols-outlined text-sm">close</span>
+</button>
+</div>
+</div>
+<div class="flex-1 fixed-grid p-6 overflow-hidden">
+<!-- 主内容行：输入区域和控制区域 -->
+<div class="main-content-row">
+<div class="border border-charcoal-medium panel-bg p-4 flex flex-col min-w-0">
+<label class="block text-sm font-bold text-text-secondary uppercase mb-2 tracking-wide" for="text-input">输入命令</label>
+<textarea class="w-full p-4 flex-1 bg-charcoal-dark border border-charcoal-light focus:outline-none focus:ring-1 focus:ring-amber-active resize-none text-sm font-mono placeholder:text-text-secondary text-amber-active" id="text-input" placeholder="在此输入要模拟输入的文本内容...">激活键盘模拟器协议。
+启动序列ALPHA-7。
+启动前延迟：3秒。
+抖动参数设置为5%。
+执行程序。
+传输结束。</textarea>
+</div>
+<div class="border border-charcoal-medium panel-bg p-4 flex flex-col h-full min-w-0">
+<div class="space-y-4">
+<label class="block text-sm font-bold text-text-secondary uppercase tracking-wide mb-2">控制界面</label>
+<div class="grid grid-cols-1 gap-2">
+<button id="start-button" class="flex items-center justify-center space-x-2 px-4 py-3 bg-amber-active hover:bg-amber-600 font-bold uppercase text-charcoal-dark transition-colors duration-200 border border-amber-active">
+<span class="material-symbols-outlined">play_arrow</span>
+<span>启动</span>
+</button>
+<button id="stop-button" class="flex items-center justify-center space-x-2 px-4 py-3 bg-red-alert/80 hover:bg-red-alert font-bold uppercase text-charcoal-dark transition-colors duration-200 border border-red-alert">
+<span class="material-symbols-outlined">stop</span>
+<span>停止</span>
+</button>
+<button id="clear-button" class="flex items-center justify-center space-x-2 px-4 py-3 bg-charcoal-light/60 hover:bg-charcoal-light font-bold uppercase text-text-primary transition-colors duration-200 border border-charcoal-light">
+<span class="material-symbols-outlined">delete_sweep</span>
+<span>清空输入</span>
+</button>
+</div>
+</div>
+<div class="flex-grow"></div>
+<div class="mt-4 border-t border-charcoal-medium pt-4 space-y-4">
+<label class="block text-sm font-bold text-text-secondary uppercase tracking-wide">系统指标</label>
+<div class="flex flex-col space-y-2">
+<div class="flex justify-between items-center text-sm">
+<span class="text-text-secondary">运行状态:</span>
+<span class="inline-flex items-center gap-x-1.5 bg-olive/20 px-2.5 py-1 text-xs font-bold text-olive border border-olive">
+<svg aria-hidden="true" class="h-1.5 w-1.5 fill-olive" viewBox="0 0 6 6"><circle cx="3" cy="3" r="3"></circle></svg>
+活跃
+</span>
+</div>
+<div class="flex justify-between items-center text-sm">
+<span class="text-text-secondary">最后事件:</span>
+<span class="text-text-primary font-mono text-xs">00:15:32 / 已发送</span>
+</div>
+<div class="flex justify-between items-center text-sm">
+<span class="text-text-secondary">平均延迟:</span>
+<span class="text-text-primary font-mono text-xs">12ms</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- 配置区域 - 独立的全宽度区域 -->
+<div class="p-3 pt-4 space-y-2 mt-2">
+    <fieldset class="border border-charcoal-medium panel-bg p-3 space-y-4">
+        <legend class="px-2 font-bold text-text-secondary text-sm uppercase tracking-wide">配置</legend>
+<div class="fixed-config-grid">
+<!-- 速度配置 -->
+<div class="flex flex-col space-y-2">
+<div class="flex items-center space-x-2">
+<label class="text-sm text-text-secondary uppercase tracking-wide" for="input-speed">速度 (字符/秒)</label>
+<div class="relative group">
+<span class="material-symbols-outlined text-sm text-text-secondary cursor-help hover:text-amber-active transition-colors">help</span>
+<div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-charcoal-dark border border-charcoal-light text-xs text-text-primary rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-10">
+实际输出汉字速度通常低于设置值，因为汉字输入需要更多处理时间
+</div>
+</div>
+</div>
+<input class="w-full px-3 py-2 bg-charcoal-dark border border-charcoal-light text-right focus:outline-none focus:ring-1 focus:ring-amber-active text-amber-active font-mono" id="input-speed" type="number" value="5"/>
+</div>
+<!-- 延迟配置 -->
+<div class="flex flex-col space-y-2">
+<label class="text-sm text-text-secondary uppercase tracking-wide" for="countdown">延迟 (秒)</label>
+<input class="w-full px-3 py-2 bg-charcoal-dark border border-charcoal-light text-right focus:outline-none focus:ring-1 focus:ring-amber-active text-amber-active font-mono" id="countdown" type="number" value="3"/>
+</div>
+<!-- 抖动配置 -->
+                <div class="flex flex-col space-y-2">
+                    <label class="text-sm text-text-secondary uppercase tracking-wide" for="random-delay">抖动 (%)</label>
+                    <input class="w-full px-3 py-2 bg-charcoal-dark border border-charcoal-light text-right focus:outline-none focus:ring-1 focus:ring-amber-active text-amber-active font-mono" id="random-delay" step="1" type="number" value="5"/>
+                </div>
+</div>
+<div class="fixed-checkbox-grid pt-2">
+<!-- 发送回车键 -->
+<label class="flex items-center space-x-2 cursor-pointer">
+<input id="send-enter-checkbox" checked="" class="h-4 w-4 bg-charcoal-light border border-charcoal-medium text-amber-active focus:ring-amber-active focus:ring-1 focus:ring-offset-0 form-checkbox" type="checkbox"/>
+<span class="text-xs uppercase tracking-wide text-text-primary">发送回车键</span>
+</label>
+<!-- 自动切换输入法 -->
+<label class="flex items-center space-x-2 cursor-pointer">
+<input id="auto-switch-checkbox" checked="" class="h-4 w-4 bg-charcoal-light border border-charcoal-medium text-amber-active focus:ring-amber-active focus:ring-1 focus:ring-offset-0 form-checkbox" type="checkbox"/>
+<span class="text-xs uppercase tracking-wide text-text-primary">自动切换输入法</span>
+</label>
+<!-- IDE模式 -->
+<label class="flex items-center space-x-2 cursor-pointer">
+<input id="ide-mode-checkbox" class="h-4 w-4 bg-charcoal-light border border-charcoal-medium text-amber-active focus:ring-amber-active focus:ring-1 focus:ring-offset-0 form-checkbox" type="checkbox"/>
+<span class="text-xs uppercase tracking-wide text-text-primary">IDE模式</span>
+</label>
+<!-- 置于顶层 -->
+<label class="flex items-center space-x-2 cursor-pointer">
+<input id="always-on-top-checkbox" class="h-4 w-4 bg-charcoal-light border border-charcoal-medium text-amber-active focus:ring-amber-active focus:ring-1 focus:ring-offset-0 form-checkbox" type="checkbox"/>
+<span class="text-xs uppercase tracking-wide text-text-primary">置于顶层</span>
+</label>
+<!-- 完成提醒 -->
+<label class="flex items-center space-x-2 cursor-pointer">
+<input id="show-notifications-checkbox" checked="" class="h-4 w-4 bg-charcoal-light border border-charcoal-medium text-amber-active focus:ring-amber-active focus:ring-1 focus:ring-offset-0 form-checkbox" type="checkbox"/>
+<span class="text-xs uppercase tracking-wide text-text-primary">完成提醒</span>
+</label>
+</div>
+</fieldset>
+
+<!-- 状态栏 -->
+<div class="flex flex-row justify-between items-center gap-3 pt-3 mt-2">
+<div class="flex-grow"></div>
+<a id="support-button" class="text-sm text-text-secondary hover:text-amber-active transition-colors font-bold uppercase tracking-wide cursor-pointer">支持</a>
+</div>
+</div>
+</div>
+
+<!-- 支持弹出窗口 -->
+<div id="support-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-charcoal-dark border border-charcoal-light rounded-lg p-6 max-w-md mx-4 relative">
+        <!-- 关闭按钮 -->
+        <button id="close-support-modal" class="absolute top-4 right-4 text-text-secondary hover:text-amber-active transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+        </button>
+        
+        <!-- 支持图片 -->
+        <div class="text-center">
+            <img src="../../assets/images/support-image.svg" alt="支持开发者" class="w-full max-w-sm mx-auto rounded-lg shadow-lg">
+        </div>
+    </div>
+</div>
+
+<script>
+// API基础URL
+const API_BASE = 'http://localhost:5000/api';
+
+// 用户设置记忆功能
+const userSettingsManager = {
+    // 默认设置
+    defaultSettings: {
+        speed: 5,
+        countdown: 3,
+        jitter: 5,
+        sendEnter: true,
+        autoSwitch: true,
+        ideMode: false,
+        alwaysOnTop: false,
+        showNotifications: true
+    },
+    
+    // 保存设置到localStorage
+    saveSettings: function() {
+        const settings = {
+            speed: parseInt(speedInput.value) || this.defaultSettings.speed,
+            countdown: parseInt(countdownInput.value) || this.defaultSettings.countdown,
+            jitter: parseInt(jitterInput.value) || this.defaultSettings.jitter,
+            sendEnter: sendEnterCheckbox ? sendEnterCheckbox.checked : this.defaultSettings.sendEnter,
+            autoSwitch: autoSwitchCheckbox ? autoSwitchCheckbox.checked : this.defaultSettings.autoSwitch,
+            ideMode: ideModeCheckbox ? ideModeCheckbox.checked : this.defaultSettings.ideMode,
+            alwaysOnTop: alwaysOnTopCheckbox ? alwaysOnTopCheckbox.checked : this.defaultSettings.alwaysOnTop,
+            showNotifications: showNotificationsCheckbox ? showNotificationsCheckbox.checked : this.defaultSettings.showNotifications
+        };
+        
+        try {
+            localStorage.setItem('keyboardTyperSettings', JSON.stringify(settings));
+        } catch (error) {
+            console.warn('无法保存用户设置:', error);
+        }
+    },
+    
+    // 从localStorage加载设置
+    loadSettings: function() {
+        try {
+            const savedSettings = localStorage.getItem('keyboardTyperSettings');
+            if (savedSettings) {
+                return JSON.parse(savedSettings);
+            }
+        } catch (error) {
+            console.warn('无法加载用户设置:', error);
+        }
+        return this.defaultSettings;
+    },
+    
+    // 应用设置到界面
+    applySettings: function(settings) {
+        if (speedInput) speedInput.value = settings.speed;
+        if (countdownInput) countdownInput.value = settings.countdown;
+        if (jitterInput) jitterInput.value = settings.jitter;
+        if (sendEnterCheckbox) sendEnterCheckbox.checked = settings.sendEnter;
+        if (autoSwitchCheckbox) autoSwitchCheckbox.checked = settings.autoSwitch;
+        if (ideModeCheckbox) ideModeCheckbox.checked = settings.ideMode;
+        if (alwaysOnTopCheckbox) alwaysOnTopCheckbox.checked = settings.alwaysOnTop;
+        if (showNotificationsCheckbox) showNotificationsCheckbox.checked = settings.showNotifications;
+        
+        // 应用置顶设置
+        if (settings.alwaysOnTop && typeof require !== 'undefined') {
+            try {
+                const { ipcRenderer } = require('electron');
+                ipcRenderer.send('window-always-on-top', settings.alwaysOnTop);
+            } catch (error) {
+                console.warn('无法设置窗口置顶:', error);
+            }
+        }
+    }
+};
+
+// 状态轮询间隔
+let statusInterval = null;
+
+// 获取DOM元素
+const textInput = document.getElementById('text-input');
+const speedInput = document.getElementById('input-speed');
+const countdownInput = document.getElementById('countdown');
+const jitterInput = document.getElementById('random-delay');
+const sendEnterCheckbox = document.getElementById('send-enter-checkbox');
+const autoSwitchCheckbox = document.getElementById('auto-switch-checkbox');
+const ideModeCheckbox = document.getElementById('ide-mode-checkbox');
+const alwaysOnTopCheckbox = document.getElementById('always-on-top-checkbox');
+const showNotificationsCheckbox = document.getElementById('show-notifications-checkbox');
+const startButton = document.getElementById('start-button');
+const stopButton = document.getElementById('stop-button');
+const clearButton = document.getElementById('clear-button');
+if (!sendEnterCheckbox || !autoSwitchCheckbox || !ideModeCheckbox || !alwaysOnTopCheckbox || !showNotificationsCheckbox || !startButton || !stopButton || !clearButton) {
+    console.error('UI初始化失败: 部分控件未找到。');
+}
+const statusText = document.querySelectorAll('.text-text-primary.font-mono.text-xs')[0];
+const lastEventText = document.querySelector('.text-text-primary.font-mono.text-xs');
+let lastNotifiedStatus = '';// notification state
+
+// API调用函数
+async function apiCall(endpoint, method = 'GET', data = null) {
+    try {
+        const options = {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        };
+        
+        if (data) {
+            options.body = JSON.stringify(data);
+        }
+        
+        const response = await fetch(`${API_BASE}${endpoint}`, options);
+        return await response.json();
+    } catch (error) {
+        console.error('API调用失败:', error);
+        return { success: false, message: error.message };
+    }
+}
+
+// 开始输入
+async function startTyping() {
+    const text = textInput.value;
+    const speed = parseInt(speedInput.value) || 5; // 字符/秒，默认5
+    const countdown = parseInt(countdownInput.value) || 3;
+    const jitter = parseInt(jitterInput.value) || 5;
+    const sendEnter = sendEnterCheckbox ? sendEnterCheckbox.checked : true;
+    const autoSwitch = autoSwitchCheckbox ? autoSwitchCheckbox.checked : true;
+    const ideMode = ideModeCheckbox ? ideModeCheckbox.checked : false;
+    
+    if (!text.trim()) {
+        alert('请输入要模拟输入的文本内容');
+        return;
+    }
+    
+    const result = await apiCall('/start', 'POST', {
+        text,
+        speed,
+        countdown,
+        jitter,
+        sendEnter,
+        autoSwitch,
+        ideMode
+    });
+    
+    if (result.success) {
+        if (startButton) {
+            startButton.disabled = true;
+        }
+        if (stopButton) {
+            stopButton.disabled = false;
+        }
+        lastNotifiedStatus = '';
+        startStatusPolling();
+    } else {
+        alert('启动失败: ' + result.message);
+    }
+}
+
+// 停止输入
+async function stopTyping() {
+    const result = await apiCall('/stop', 'POST');
+    if (result.success) {
+        // 立即禁用停止按钮
+        if (stopButton) {
+            stopButton.disabled = true;
+        }
+        
+        // 立即启用启动按钮
+        if (startButton) {
+            startButton.disabled = false;
+        }
+        
+        // 停止状态轮询
+        stopStatusPolling();
+        
+        // 立即更新一次状态以确保UI同步
+        setTimeout(updateStatus, 100);
+        
+        // 显示停止通知
+        showNotification('任务已停止', '输入任务已被用户中止');
+    } else {
+        alert('停止失败: ' + result.message);
+    }
+}
+
+// 清空文本
+function clearText() {
+    textInput.value = '';
+}
+
+// 获取状态更新
+async function updateStatus() {
+    console.log('updateStatus 函数被调用'); // 调试信息
+    const result = await apiCall('/status', 'GET');
+    
+    if (result) {
+        console.log('API 返回结果:', result); // 调试信息
+        
+        // 更新运行状态显示 - 直接通过文本内容查找
+        const statusBadge = document.querySelector('span.inline-flex.items-center.gap-x-1\\.5');
+        console.log('找到状态徽章元素:', statusBadge); // 调试信息
+        
+        if (statusBadge) {
+            const statusSvg = statusBadge.querySelector('svg');
+            
+            if (statusSvg) {
+                let statusText = '空闲';
+                let statusClass = 'bg-olive/20 text-olive border-olive';
+                let svgClass = 'fill-olive';
+                
+                // 根据后端返回的状态进行判断
+                if (result.is_typing || result.current_status === 'TYPING') {
+                    statusText = '输入中';
+                    statusClass = 'bg-amber-500/20 text-amber-500 border-amber-500';
+                    svgClass = 'fill-amber-500';
+                } else if (result.current_status === 'COMPLETED') {
+                    statusText = '已完成';
+                    statusClass = 'bg-green-500/20 text-green-500 border-green-500';
+                    svgClass = 'fill-green-500';
+                } else if (result.current_status === 'ABORTED') {
+                    statusText = '已中止';
+                    statusClass = 'bg-red-500/20 text-red-500 border-red-500';
+                    svgClass = 'fill-red-500';
+                } else if (result.current_status && result.current_status.startsWith('COUNTDOWN_')) {
+                    // 处理倒计时状态，如 'COUNTDOWN_3S'
+                    statusText = '准备中';
+                    statusClass = 'bg-blue-500/20 text-blue-500 border-blue-500';
+                    svgClass = 'fill-blue-500';
+                } else if (result.current_status === 'IDLE') {
+                    statusText = '空闲';
+                    statusClass = 'bg-olive/20 text-olive border-olive';
+                    svgClass = 'fill-olive';
+                }
+                
+                console.log('更新状态为:', statusText); // 调试信息
+                
+                // 更新状态文本 - 替换SVG后的文本节点
+                const textNodes = Array.from(statusBadge.childNodes).filter(node => node.nodeType === Node.TEXT_NODE);
+                if (textNodes.length > 0) {
+                    textNodes[textNodes.length - 1].textContent = statusText;
+                } else {
+                    // 如果没有文本节点，创建一个
+                    statusBadge.appendChild(document.createTextNode(statusText));
+                }
+                
+                // 更新样式
+                statusBadge.className = `inline-flex items-center gap-x-1.5 px-2.5 py-1 text-xs font-bold border ${statusClass}`;
+                statusSvg.className = `h-1.5 w-1.5 ${svgClass}`;
+            }
+        }
+        
+        // 更新最后事件显示 - 使其更易理解
+        console.log('开始更新最后事件显示'); // 调试信息
+        console.log('lastEventText 元素:', lastEventText); // 调试信息
+        
+        if (lastEventText) {
+            let eventText = '等待用户操作';
+            
+            // 根据后端状态更新事件显示
+            if (result.is_typing || result.current_status === 'TYPING') {
+                if (result.progress !== undefined && result.total_chars !== undefined) {
+                    const percentage = Math.round((result.progress / result.total_chars) * 100);
+                    eventText = `进度: ${result.progress}/${result.total_chars} (${percentage}%)`;
+                } else {
+                    eventText = '正在输入...';
+                }
+            } else if (result.current_status === 'COMPLETED') {
+                eventText = `已完成 ${result.total_chars || 0} 个字符`;
+            } else if (result.current_status === 'ABORTED') {
+                eventText = `用户中止 (${result.progress || 0}/${result.total_chars || 0})`;
+            } else if (result.current_status && result.current_status.startsWith('COUNTDOWN_')) {
+                // 从状态中提取倒计时秒数，如 'COUNTDOWN_3S' -> '3'
+                const seconds = result.current_status.replace('COUNTDOWN_', '').replace('S', '');
+                eventText = `准备开始输入... (${seconds}秒)`;
+            } else if (result.current_status === 'IDLE') {
+                eventText = '等待用户操作';
+            }
+            
+            console.log('更新最后事件为:', eventText); // 调试信息
+            lastEventText.textContent = eventText;
+        }
+        
+        // 更新底部状态
+        const bottomStatusElements = document.querySelectorAll('.inline-flex.items-center');
+        if (bottomStatusElements.length > 1) {
+            const bottomStatus = bottomStatusElements[1];
+            const bottomStatusSpan = bottomStatus.querySelector('span:not(.h-1\\.5)');
+            if (bottomStatusSpan) {
+                const statusMap = {
+                    'OPERATIONAL': '运行中',
+                    'COMPLETED': '已完成',
+                    'ABORTED': '已中止',
+                    'IDLE': '空闲',
+                    'PREPARING': '准备中',
+                    'TYPING': '输入中',
+                    'ERROR': '错误'
+                };
+                bottomStatusSpan.textContent = statusMap[result.current_status] || result.current_status || '运行中';
+            }
+        }
+        
+        // 更新按钮状态 - 确保按钮状态与后端状态同步
+        if (result.is_typing) {
+            // 正在输入时：启动按钮禁用，停止按钮启用
+            if (startButton) {
+                startButton.disabled = true;
+            }
+            if (stopButton) {
+                stopButton.disabled = false;
+            }
+        } else {
+            // 未在输入时：启动按钮启用，停止按钮禁用
+            if (startButton) {
+                startButton.disabled = false;
+            }
+            if (stopButton) {
+                stopButton.disabled = true;
+            }
+        }
+        
+        // 如果输入完成，停止轮询
+        if (result.is_typing) {
+            lastNotifiedStatus = '';
+        } else if (result.current_status === 'COMPLETED' || result.current_status === 'ABORTED') {
+            if (lastNotifiedStatus !== result.current_status) {
+                stopStatusPolling();
+                if (result.current_status === 'COMPLETED') {
+                    showNotification('任务完成', `成功输入 ${result.total_chars} 个字符`);
+                } else {
+                    showNotification('任务中止', `已输入 ${result.progress} / ${result.total_chars} 个字符`);
+                }
+                lastNotifiedStatus = result.current_status;
+            }
+        }
+    }
+}
+
+// 显示通知
+function showNotification(title, message) {
+    console.log(`${title}: ${message}`);
+    
+    // 检查用户是否启用了通知
+    const showNotifications = showNotificationsCheckbox ? showNotificationsCheckbox.checked : true;
+    
+    if (showNotifications) {
+        setTimeout(() => {
+            alert(`${title}\n${message}`);
+        }, 500);
+    }
+}
+
+// 开始状态轮询
+function startStatusPolling() {
+    if (statusInterval) {
+        clearInterval(statusInterval);
+    }
+    statusInterval = setInterval(updateStatus, 500);
+}
+
+// 停止状态轮询
+function stopStatusPolling() {
+    if (statusInterval) {
+        clearInterval(statusInterval);
+        statusInterval = null;
+    }
+}
+
+// 绑定事件
+if (startButton) {
+    startButton.addEventListener('click', startTyping);
+}
+
+if (stopButton) {
+    stopButton.addEventListener('click', stopTyping);
+}
+
+if (clearButton) {
+    clearButton.addEventListener('click', clearText);
+}
+
+// 支持弹出窗口功能
+const supportButton = document.getElementById('support-button');
+const supportModal = document.getElementById('support-modal');
+const closeSupportModal = document.getElementById('close-support-modal');
+
+if (supportButton && supportModal && closeSupportModal) {
+    // 打开支持弹窗
+    supportButton.addEventListener('click', () => {
+        supportModal.classList.remove('hidden');
+    });
+    
+    // 关闭支持弹窗
+    closeSupportModal.addEventListener('click', () => {
+        supportModal.classList.add('hidden');
+    });
+    
+    // 点击背景关闭弹窗
+    supportModal.addEventListener('click', (e) => {
+        if (e.target === supportModal) {
+            supportModal.classList.add('hidden');
+        }
+    });
+    
+    // ESC键关闭弹窗
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !supportModal.classList.contains('hidden')) {
+            supportModal.classList.add('hidden');
+        }
+    });
+}
+
+// 初始化时检查后端健康状态
+async function checkBackendHealth() {
+    try {
+        const result = await apiCall('/health', 'GET');
+        if (result.status === 'healthy') {
+            console.log('后端已就绪');
+            // 更新连接状态显示
+            const avgLatencyText = document.querySelectorAll('.text-text-primary.font-mono.text-xs')[2];
+            if (avgLatencyText) {
+                avgLatencyText.textContent = '已连接';
+            }
+        }
+    } catch (error) {
+        console.error('后端健康检查失败:', error);
+        const avgLatencyText = document.querySelectorAll('.text-text-primary.font-mono.text-xs')[2];
+        if (avgLatencyText) {
+            avgLatencyText.textContent = '离线';
+        }
+    }
+}
+
+// 重置非活动状态
+async function resetInactiveStatus() {
+    try {
+        // 首先获取当前状态
+        const result = await apiCall('/status', 'GET');
+        
+        if (result) {
+            // 如果状态是已完成、已中止或其他非活动状态，直接重置前端显示
+            if (result.current_status === 'COMPLETED' || 
+                result.current_status === 'ABORTED' || 
+                result.current_status === 'ERROR') {
+                
+                console.log('检测到非活动状态，正在重置前端显示...', result.current_status);
+                
+                // 直接重置前端显示为初始状态
+                resetFrontendDisplay();
+                return;
+            }
+        }
+        
+        // 如果状态正常，更新前端显示
+        updateStatus();
+        
+    } catch (error) {
+        console.warn('重置状态时出错:', error);
+        // 出错时显示初始状态
+        resetFrontendDisplay();
+    }
+}
+
+// 重置前端显示为初始状态
+function resetFrontendDisplay() {
+    // 重置运行状态显示
+    const statusBadge = document.querySelector('span.inline-flex.items-center.gap-x-1\\.5');
+    if (statusBadge) {
+        const statusSvg = statusBadge.querySelector('svg');
+        if (statusSvg) {
+            // 设置为空闲状态
+            const textNodes = Array.from(statusBadge.childNodes).filter(node => node.nodeType === Node.TEXT_NODE);
+            if (textNodes.length > 0) {
+                textNodes[textNodes.length - 1].textContent = '空闲';
+            } else {
+                statusBadge.appendChild(document.createTextNode('空闲'));
+            }
+            
+            // 更新样式为空闲状态
+            statusBadge.className = 'inline-flex items-center gap-x-1.5 px-2.5 py-1 text-xs font-bold border bg-olive/20 text-olive border-olive';
+            statusSvg.className = 'h-1.5 w-1.5 fill-olive';
+        }
+    }
+    
+    // 重置最后事件显示
+    if (lastEventText) {
+        lastEventText.textContent = '等待用户操作';
+    }
+    
+    // 重置底部状态
+    const bottomStatusElements = document.querySelectorAll('.inline-flex.items-center');
+    if (bottomStatusElements.length > 1) {
+        const bottomStatus = bottomStatusElements[1];
+        const bottomStatusSpan = bottomStatus.querySelector('span:not(.h-1\\.5)');
+        if (bottomStatusSpan) {
+            bottomStatusSpan.textContent = '空闲';
+        }
+    }
+    
+    console.log('前端显示已重置为初始状态');
+}
+
+// 重置后端状态为初始状态
+async function resetBackendStatus() {
+    try {
+        const response = await fetch('http://localhost:5000/api/reset', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            console.warn('重置后端状态失败:', response.status);
+        } else {
+            console.log('后端状态已成功重置');
+        }
+    } catch (error) {
+        console.warn('重置后端状态时出错:', error);
+    }
+}
+
+// 页面加载完成后初始化
+window.addEventListener('DOMContentLoaded', async () => {
+    console.log('控制面板已初始化');
+    
+    // 加载并应用用户设置
+    const savedSettings = userSettingsManager.loadSettings();
+    userSettingsManager.applySettings(savedSettings);
+    
+    // 为所有输入控件添加自动保存功能
+    const inputElements = [speedInput, countdownInput, jitterInput, sendEnterCheckbox, autoSwitchCheckbox, ideModeCheckbox, alwaysOnTopCheckbox, showNotificationsCheckbox];
+    inputElements.forEach(element => {
+        if (element) {
+            element.addEventListener('change', () => {
+                userSettingsManager.saveSettings();
+            });
+        }
+    });
+    
+    checkBackendHealth();
+    // 定期检查健康状态
+    setInterval(checkBackendHealth, 10000);
+    
+    // 重置非活动状态并初始化显示
+    await resetInactiveStatus();
+    
+    // 初始化窗口控制按钮
+    initializeWindowControls();
+});
+
+// 窗口控制功能
+function initializeWindowControls() {
+    const { ipcRenderer } = require('electron');
+    
+    // 关闭按钮
+    const closeBtn = document.getElementById('close-btn');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            ipcRenderer.send('window-close');
+        });
+    }
+    
+    // 最小化按钮
+    const minimizeBtn = document.getElementById('minimize-btn');
+    if (minimizeBtn) {
+        minimizeBtn.addEventListener('click', () => {
+            ipcRenderer.send('window-minimize');
+        });
+    }
+    
+    // 最大化/还原按钮
+    const maximizeBtn = document.getElementById('maximize-btn');
+    if (maximizeBtn) {
+        maximizeBtn.addEventListener('click', () => {
+            ipcRenderer.send('window-maximize');
+        });
+    }
+    
+    // 置于顶层功能
+    const alwaysOnTopCheckbox = document.getElementById('always-on-top-checkbox');
+    if (alwaysOnTopCheckbox) {
+        alwaysOnTopCheckbox.addEventListener('change', () => {
+            ipcRenderer.send('window-always-on-top', alwaysOnTopCheckbox.checked);
+        });
+    }
+}
+
+// 页面卸载时清理
+window.addEventListener('beforeunload', () => {
+    stopStatusPolling();
+});
+</script>
+
+</body></html>

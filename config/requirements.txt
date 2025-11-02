@@ -1,0 +1,5 @@
+pynput==1.7.7
+pywin32==311
+flask==3.0.0
+flask-cors==4.0.0
+winshell==0.6
